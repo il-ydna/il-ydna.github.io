@@ -1,174 +1,213 @@
 :root {
-    --bg: #C1BDB3;
-    --text: #111111;
-    --accent: #ffffff;
-    --max-width: 1200px;
-  }
-  
-  * {
-    box-sizing: border-box;
-  }
-  
-  body {
-    background-image: url('assets/bg.jpg');
-    background-size: cover;         
-    background-position: center;    
-    background-repeat: no-repeat;   
-    background-attachment: fixed;   
-    margin: 0;                      
-    height: 100vh;         
-    font-family: 'Times New Roman';         
-  }
-  
-  header {
-    color: transparent;
-    padding: 1rem;
-  }
+  --bg: #c1bdb3;
+  --text: #111111;
+  --accent: #ffffff;
+  --max-width: 1200px;
+}
 
-  nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: var(--max-width);
-    margin: 0 auto;
-  }
-  
-  nav ul {
-    list-style: none;
-    display: flex;
-    gap: 1rem;
-    padding: 0;
-  }
-  
-  nav a {
-    color: black;
-    text-decoration: none;
-  }
-  
-  section {
-    max-width: var(--max-width);
-    margin: 2rem auto;
-    padding: 0 1rem;
-  }
+* {
+  box-sizing: border-box;
+}
 
-  h2 { font-size: 6vw; }
+html {
+  scroll-behavior: smooth;
+}
 
-  .project-list {
-    list-style: none;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    width: 60vw;
-    margin-left: auto;
-    margin-right: auto;
+body {
+  margin: 0;
+  font-family: "Times New Roman";
+  overflow-x: hidden;
+  background: white; /* fallback */
+}
 
-  }
-  .project-card {
-    overflow: hidden;
-    position: relative;
-    padding: 0;
-  }
-  
-  .card-image {
-    position: relative;
-  }
-  
-  .card-image img {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    width: 60vw;
-  }
-  
-  /* Base styles for both text layers */
-  .card-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 0.5rem 1rem;
-    transition: opacity 0.3s ease;
-    z-index: 2;
-  }
-  
-  /* Show primary text by default */
-  .card-text.primary {
-    opacity: 1;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-  
-  /* Hide secondary text by default */
-  .card-text.secondary {
-    opacity: 0;
-    position: absolute;
-    overflow-y: auto;
-    max-height: 100%;
-  }
-  
-  /* On hover, hide primary and show secondary */
-  .project-card-link:hover .card-text.primary {
-    opacity: 0;
-  }
-  
-  .project-card-link:hover .card-text.secondary {
-    opacity: 1;
-  }
-  .project-card-link {
-    display: block;
-    text-decoration: none;
-    color: inherit;
-  }
-  
-  form {
-    margin-left: auto;
-    margin-right: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    width: 40%;
-  }
-  
-  
-  input, textarea {
-    padding: 0.5rem;
-    font-size: 1rem;
-    font-family: 'Times New Roman';
-  }
-  
-  button {
-    background: var(--accent);
-    color: black;
-    border: 1px solid black;
-    padding: 0.75rem;
-    cursor: pointer;
-    font-family: 'Times New Roman';
-    font-size: 1rem;
-  }
-  
-  footer {
-    text-align: center;
-    padding: 2rem 1rem;
-    background: transparent;
-  }
-  .inline-image {
-    vertical-align: middle;
-    height: auto;
-    margin: 0 8px;
-    width: 30vw;
-  }
-  .overflow-image {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    width: 60vw;
-  }
-  p.half-width {
-    width: 50%;
-    line-height: 1.5;   /* optional: improve readability */
-  }
+/* Shared styles */
+.bg-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  pointer-events: none;
+  will-change: transform, opacity;
+  z-index: -1;
+}
+
+/* Original background image */
+.original-bg {
+  background-image: url("assets/bg.jpg");
+}
+
+/* New background image */
+.new-bg {
+  background-image: url("assets/crescent.jpg");
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+header {
+  color: transparent;
+  padding: 0.1rem;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  gap: 1rem;
+  padding: 0;
+}
+
+nav a {
+  color: black;
+  text-decoration: none;
+}
+
+section {
+  max-width: var(--max-width);
+  margin: 3rem auto;
+  padding: 0 1rem;
+  scroll-margin-top: 1.5rem;
+}
+#hero {
+  margin: 0 auto;
+}
+
+h2 {
+  font-size: 6.5vw;
+  height: 2rem;
+}
+
+.project-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 60vw;
+  margin-left: auto;
+  margin-right: auto;
+}
+.project-card {
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+}
+
+.card-image {
+  position: relative;
+}
+
+.card-image img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 60vw;
+}
+
+/* Base styles for both text layers */
+.card-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 0.5rem 1rem;
+  transition: opacity 0.8s ease;
+  z-index: 2;
+}
+
+/* Show primary text by default */
+.card-text.primary {
+  opacity: 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Hide secondary text by default */
+.card-text.secondary {
+  opacity: 0;
+  position: absolute;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* On hover, hide primary and show secondary */
+.project-card-link:hover .card-text.primary {
+  opacity: 0;
+}
+
+.project-card-link:hover .card-text.secondary {
+  opacity: 1;
+}
+.project-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+form {
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 40%;
+}
+
+input,
+textarea {
+  padding: 0.5rem;
+  font-size: 1rem;
+  font-family: "Times New Roman";
+}
+
+button {
+  background: var(--accent);
+  color: black;
+  border: 1px solid black;
+  padding: 0.75rem;
+  cursor: pointer;
+  font-family: "Times New Roman";
+  font-size: 1rem;
+}
+
+footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: transparent;
+  margin-bottom: 50vw;
+}
+.image-wrapper {
+  padding-bottom: 5rem;
+}
+
+.inline-image {
+  vertical-align: middle;
+  height: auto;
+  width: 36vw;
+}
+
+.overflow-image {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 60vw;
+}
+p.half-width {
+  width: 50%;
+  line-height: 1.5; /* optional: improve readability */
+}
