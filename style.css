@@ -50,7 +50,7 @@ body {
 
 header {
   color: transparent;
-  padding: 0.1rem;
+  padding: 0;
 }
 
 nav {
@@ -59,6 +59,7 @@ nav {
   align-items: center;
   max-width: var(--max-width);
   margin: 0 auto;
+  padding: 0;
 }
 
 nav ul {
@@ -80,12 +81,14 @@ section {
   scroll-margin-top: 1.5rem;
 }
 #hero {
-  margin: 0 auto;
+  margin-top: 0;
 }
 
 h2 {
   font-size: 6.5vw;
   height: 2rem;
+  margin-top: 3vw;
+  margin-bottom: 8vw;
 }
 
 .project-list {

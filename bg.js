@@ -17,9 +17,9 @@ function animateBackground() {
 
   // Fade in new background after threshold is reached
   if (scroll > fadeInThreshold) {
-    fadeInProgress += (1 - fadeInProgress) * 0.05; // slower fade
+    fadeInProgress += (1 - fadeInProgress) * 0.4; // slower fade
   } else {
-    fadeInProgress += (0 - fadeInProgress) * 0.1; // fade back out if needed
+    fadeInProgress += (0 - fadeInProgress) * 0.6; // fade back out if needed
   }
 
   newBg.style.opacity = fadeInProgress;
