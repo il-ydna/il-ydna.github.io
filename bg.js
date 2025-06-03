@@ -13,7 +13,7 @@ function animateBackground() {
   // Smooth interpolation for original background
   currentProgress += (targetProgress - currentProgress) * 0.1;
   originalBg.style.transform = `translateX(${currentProgress * 100}vw)`;
-  originalBg.style.opacity = `${1 - currentProgress}`;
+  originalBg.style.opacity = `${1 - 2 * currentProgress}`;
 
   // Fade in new background after threshold is reached
   if (scroll > fadeInThreshold) {

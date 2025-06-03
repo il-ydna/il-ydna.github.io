@@ -50,16 +50,17 @@ body {
 
 header {
   color: transparent;
+  padding: 0 1rem;
   padding: 0;
+  margin: 3rem auto;
 }
 
 nav {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0;
+  padding: 0 1rem;
 }
 
 nav ul {
@@ -213,4 +214,25 @@ footer {
 p.half-width {
   width: 50%;
   line-height: 1.5; /* optional: improve readability */
+}
+
+@media (max-width: 768px) {
+  .inline-image {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 72vw;
+  }
+  .project-list {
+    width: 90vw;
+  }
+  .card-image img {
+    width: 90vw;
+  }
+  section {
+    margin: 1.5rem auto;
+  }
+  .image-wrapper {
+    padding-bottom: 2rem;
+  }
 }
