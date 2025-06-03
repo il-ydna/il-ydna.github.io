@@ -12,19 +12,24 @@ function animateBackground() {
 
   // Smooth interpolation for original background
   currentProgress += (targetProgress - currentProgress) * 0.1;
+  currentProgress = snapNearZero(currentProgress);
   originalBg.style.transform = `translateX(${currentProgress * 100}vw)`;
-  originalBg.style.opacity = `${1 - 2 * currentProgress}`;
+  originalBg.style.opacity = `${snapNearZero(1 - 2 * currentProgress)}`;
 
   // Fade in new background after threshold is reached
   if (scroll > fadeInThreshold) {
-    fadeInProgress += (1 - fadeInProgress) * 0.4; // slower fade
+    fadeInProgress += (1 - fadeInProgress) * 0.4;
   } else {
-    fadeInProgress += (0 - fadeInProgress) * 0.6; // fade back out if needed
+    fadeInProgress += (0 - fadeInProgress) * 0.6;
   }
-
+  fadeInProgress = snapNearZero(fadeInProgress);
   newBg.style.opacity = fadeInProgress;
 
   requestAnimationFrame(animateBackground);
 }
 
 requestAnimationFrame(animateBackground);
+
+function snapNearZero(val, threshold = 0.001) {
+  return Math.abs(val) < threshold ? 0 : val;
+}

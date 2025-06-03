@@ -235,4 +235,7 @@ p.half-width {
   .image-wrapper {
     padding-bottom: 2rem;
   }
+  form {
+    width: 90%;
+  }
 }
