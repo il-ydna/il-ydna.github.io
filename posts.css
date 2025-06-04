@@ -1,0 +1,146 @@
+body {
+  background: url("assets/bgcloud.jpg") no-repeat center center fixed;
+  background-size: cover;
+
+  max-width: 600px;
+  margin: auto;
+  font-family: "Times New Roman";
+  padding: 1rem;
+  color: white;
+}
+
+header {
+  color: transparent;
+  padding: 0 1rem;
+  padding: 0;
+  margin: 2rem auto;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  gap: 1rem;
+  padding: 0;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+}
+
+h1 {
+  font-size: 4vw;
+  display: flex;
+  padding: 0.5rem 1rem;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-family: "Times New Roman";
+  border-radius: 4px;
+  justify-content: center;
+  border-width: 2px;
+  border-style: outset;
+  border-color: buttonborder;
+  text-align: center;
+}
+
+/* Optional: semi-transparent background for readability */
+form,
+#posts {
+  background: rgba(0, 0, 0, 0.6); /* dark translucent background */
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+input:not([type="file"]),
+textarea {
+  all: unset;
+  background-color: rgba(0, 0, 0, 0.6);
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-family: "Times New Roman";
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-wrap: break-word; /* for older browsers */
+  overflow-wrap: break-word;
+}
+
+button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  color: white;
+  font-family: "Times New Roman";
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.post {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.post h3 {
+  margin: 0 0 0.25rem 0;
+}
+
+.post small {
+  color: #ccc;
+}
+
+img {
+  max-width: 100%;
+  margin-top: 0.5rem;
+  border-radius: 4px;
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+button:hover {
+  background-color: #ffffff40;
+  transform: translateY(-1px);
+}
+
+.img-uploader {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  color: white;
+  font-family: "Times New Roman";
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+
+  border-width: 2px;
+  border-style: outset;
+  border-color: buttonborder; /* fallback */
+}
+
+.img-uploader:hover {
+  background-color: #ffffff40;
+  transform: translateY(-1px);
+}
+.button-style {
+  padding: 0.5rem 1rem;
+  background-color: rgba(0, 0, 0, 0.6);
+  font-family: "Times New Roman";
+  border-radius: 4px;
+  border-width: 2px;
+  border-style: outset;
+  border-color: buttonborder;
+}

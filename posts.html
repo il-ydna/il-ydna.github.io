@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>My Updates</title>
+    <link rel="stylesheet" href="posts.css" />
+  </head>
+  <body>
+    <header>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+        </ul>
+      </nav>
+    </header>
+    <h1>What Andy's Up To</h1>
+
+    <form id="postForm" class="button-style">
+      <input type="text" name="title" placeholder="Post Title" />
+      <textarea
+        name="content"
+        placeholder="Write something..."
+        rows="5"
+      ></textarea>
+
+      <input type="file" id="imageInput" name="image" accept="image/*" hidden />
+
+      <div class="button-row">
+        <label for="imageInput" class="img-uploader">Choose Image</label>
+        <button type="submit">Add Post</button>
+      </div>
+    </form>
+
+    <section id="posts" class="button-style"></section>
+
+    <script src="posts.js"></script>
+  </body>
+</html>
