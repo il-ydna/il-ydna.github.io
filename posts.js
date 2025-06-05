@@ -9,6 +9,7 @@ postForm.addEventListener("submit", async (e) => {
 
   const titleInput = postForm.querySelector('input[name="title"]');
   const contentInput = postForm.querySelector('textarea[name="content"]');
+  const tagInput = postForm.querySelector('input[name="tag"]');
 
   // Remove existing error message
   removeValidationMessage();
@@ -25,21 +26,39 @@ postForm.addEventListener("submit", async (e) => {
   let imageBase64 = null;
   if (file && file.size > 0) {
     imageBase64 = await toBase64(file);
+  } else {
+    imageBase64 = ""; // send empty string instead of null
   }
 
   const newPost = {
     title: formData.get("title"),
     content: formData.get("content"),
     image: imageBase64,
+    tag: formData.get("tag") || "general",
     timestamp: Date.now(),
   };
 
-  const posts = JSON.parse(localStorage.getItem("posts") || "[]");
-  posts.unshift(newPost);
-  localStorage.setItem("posts", JSON.stringify(posts));
+  try {
+    const response = await fetch(
+      "https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPost),
+      }
+    );
 
-  postForm.reset();
-  loadPosts();
+    if (!response.ok) {
+      const errorData = await response.json();
+      showValidationMessage(errorData.error || "Failed to submit post");
+      return;
+    }
+
+    postForm.reset();
+    loadPosts(); // reload posts from Lambda
+  } catch (error) {
+    showValidationMessage("Network error. Try again.");
+  }
 });
 
 // Convert image file to base64 string
@@ -52,21 +71,55 @@ function toBase64(file) {
   });
 }
 
-// Load posts from localStorage and render them
 function loadPosts() {
-  const posts = JSON.parse(localStorage.getItem("posts") || "[]");
-  postsSection.innerHTML = posts
-    .map(
-      (post) => `
-      <article class="post">
-        <h3>${post.title}</h3>
-        <p>${post.content.replace(/\n/g, "<br>")}</p>
-        ${post.image ? `<img src="${post.image}" alt="Post Image">` : ""}
-        <small>${new Date(post.timestamp).toLocaleString()}</small>
-      </article>
-    `
-    )
-    .join("");
+  fetch("https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/")
+    .then((res) => res.json())
+    .then((posts) => {
+      postsSection.innerHTML = posts
+        .map(
+          (post) => `
+            <article class="post" data-id="${post.id}">
+              <h3>${post.title}</h3>
+              <p>${post.content.replace(/\n/g, "<br>")}</p>
+              ${post.image ? `<img src="${post.image}" alt="Post Image">` : ""}
+              <small>${new Date(post.timestamp).toLocaleString()} • Tag: ${
+            post.tag
+          }</small>
+              <button onclick="deletePost('${
+                post.id
+              }')" style="margin-top: 0.5rem;">Delete</button>
+            </article>
+          `
+        )
+        .join("");
+    })
+    .catch(() => {
+      postsSection.innerHTML =
+        "<p style='color:red; text-align:center;'>Failed to load posts.</p>";
+    });
+}
+
+async function deletePost(id) {
+  if (!confirm("Delete this post?")) return;
+
+  try {
+    const response = await fetch(
+      `https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/?id=${encodeURIComponent(
+        id
+      )}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    if (!response.ok) throw new Error("Delete failed");
+
+    loadPosts(); // Refresh posts list
+  } catch (err) {
+    alert("Failed to delete post.");
+    console.error(err);
+  }
 }
 
 // Show a custom validation error above the form
@@ -86,3 +139,45 @@ function removeValidationMessage() {
   const existing = document.getElementById("form-error");
   if (existing) existing.remove();
 }
+
+const dropdown = document.getElementById("tagDropdown");
+const selected = dropdown.querySelector(".selected-option");
+const options = dropdown.querySelector(".dropdown-options");
+const hiddenInput = document.getElementById("tagInput");
+
+selected.addEventListener("click", () => {
+  options.style.display = options.style.display === "block" ? "none" : "block";
+});
+
+dropdown.querySelectorAll(".dropdown-option").forEach((option) => {
+  option.addEventListener("click", () => {
+    const label = option.innerHTML;
+    const value = option.getAttribute("data-value");
+    selected.innerHTML = label;
+    hiddenInput.value = value;
+    options.style.display = "none";
+  });
+});
+
+document.addEventListener("click", (e) => {
+  if (!dropdown.contains(e.target)) {
+    options.style.display = "none";
+  }
+});
+
+fetch("https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    title: "My First Post",
+    content: "This is a test post.",
+    image: "",
+    tag: "general",
+    timestamp: Date.now(),
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => console.log("Success:", data))
+  .catch((err) => console.error("Error:", err));

@@ -2,20 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>My Updates</title>
+    <title>Andy's Updates</title>
     <link rel="stylesheet" href="posts.css" />
   </head>
   <body>
-    <header>
+    <!-- <header>
       <nav>
         <ul>
           <li><a href="index.html">Home</a></li>
         </ul>
       </nav>
-    </header>
-    <h1>What Andy's Up To</h1>
+    </header> -->
 
-    <form id="postForm" class="button-style">
+    <form id="postForm">
       <input type="text" name="title" placeholder="Post Title" />
       <textarea
         name="content"
@@ -27,11 +26,34 @@
 
       <div class="button-row">
         <label for="imageInput" class="img-uploader">Choose Image</label>
+        <div class="custom-dropdown" id="tagDropdown">
+          <div class="selected-option button-style">Select a tag</div>
+          <div class="dropdown-options">
+            <div class="dropdown-option" data-value="general">
+              <span class="dot" style="background: #dcd2ca"></span>
+              General
+            </div>
+            <div class="dropdown-option" data-value="update">
+              <span class="dot" style="background: #7f8181"></span> Update
+            </div>
+            <div class="dropdown-option" data-value="photo">
+              <span class="dot" style="background: #5e6870"></span> Photo
+            </div>
+            <div class="dropdown-option" data-value="thought">
+              <span class="dot" style="background: #506c7f"></span> Thought
+            </div>
+            <div class="dropdown-option" data-value="guest">
+              <span class="dot" style="background: #293e51"></span> Guestbook
+            </div>
+          </div>
+          <input type="hidden" name="tag" id="tagInput" required />
+        </div>
+
         <button type="submit">Add Post</button>
       </div>
     </form>
 
-    <section id="posts" class="button-style"></section>
+    <section id="posts"></section>
 
     <script src="posts.js"></script>
   </body>
