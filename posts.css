@@ -9,6 +9,14 @@ body {
   color: white;
 }
 
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: url("assets/bgcloud.jpg") no-repeat center center fixed;
+  background-size: cover;
+}
+
 header {
   color: transparent;
   padding: 0 1rem;
