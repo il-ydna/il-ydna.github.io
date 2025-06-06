@@ -101,9 +101,7 @@ function loadPosts() {
               <p>${post.content.replace(/\n/g, "<br>")}</p>
               ${post.image ? `<img src="${post.image}" alt="Post Image">` : ""}
               <div class="post-footer">
-                <small>${new Date(post.timestamp).toLocaleString()} • Tag: ${
-            post.tag
-          }</small>
+                <small>${new Date(post.timestamp).toLocaleString()}</small>
                 <button onclick="deletePost('${post.id}')">Delete</button>
               </div>
             </article>

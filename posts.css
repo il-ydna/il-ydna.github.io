@@ -107,7 +107,7 @@ button {
   display: inline-flex;
   align-items: center;
   background-color: var(--pill-color, #ccc);
-  color: #576a78;
+  color: #ccc;
   font-size: 0.65rem;
   border-radius: 999px;
   padding: 0;
@@ -188,7 +188,7 @@ button:hover {
 
   border-width: 2px;
   border-style: outset;
-  border-color: buttonborder; /* fallback */
+  border-color: buttonborder;
 }
 
 .img-uploader:hover {
