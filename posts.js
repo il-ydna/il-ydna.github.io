@@ -15,8 +15,8 @@ postForm.addEventListener("submit", async (e) => {
   removeValidationMessage();
 
   // Custom validation
-  if (!titleInput.value.trim() || !contentInput.value.trim()) {
-    showValidationMessage("Put both title and content.");
+  if (!titleInput.value.trim()) {
+    showValidationMessage("Give a title.");
     return;
   }
 
@@ -100,7 +100,7 @@ function loadPosts() {
                 <span class="pill-label">${tagLabel}</span>
               </div>
               <h3>${post.title}</h3>
-              <p>${post.content.replace(/\n/g, "<br>")}</p>
+              <p>${(post.content || "").replace(/\n/g, "<br>")}</p>
               ${post.image ? `<img src="${post.image}" alt="Post Image">` : ""}
               <div class="post-footer">
                 <small>${new Date(post.timestamp).toLocaleString()}</small>
