@@ -133,9 +133,9 @@ async function updateHeader() {
   const idToken = await getIdToken();
 
   if (!idToken) {
-    // userControls.innerHTML = `
-    //   <button onclick="location.href='login.html'">Log in</button>
-    // `;
+    userControls.innerHTML = `
+      <button onclick="location.href='login.html'">Log in</button>
+    `;
     return;
   }
 
@@ -150,42 +150,46 @@ async function updateHeader() {
 
 async function loadPosts() {
   const idToken = await getIdToken();
+  let username = null;
 
   if (idToken) {
-    // User is logged in
-    const username = await getUsernameFromToken();
+    username = await getUsernameFromToken();
     document.getElementById(
       "username"
     ).textContent = `Signed in as ${username}`;
     postForm.style.display = "block";
   } else {
-    // Not logged in
     postForm.style.display = "none";
   }
 
-  // Fetch posts without auth header for public access
   fetch("https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/")
     .then((res) => {
       if (!res.ok) throw new Error("Failed to load posts");
       return res.json();
     })
-    .then((posts) => {
-      renderPosts(posts);
-    })
+    .then((posts) => renderPosts(posts, username)) // pass username
     .catch(() => {
       postsSection.innerHTML =
         "<p style='color:red; text-align:center;'>Failed to load posts.</p>";
     });
 }
 
-function renderPosts(posts) {
+function renderPosts(posts, currentUsername = null) {
   postsSection.innerHTML = posts
     .slice()
     .reverse()
     .map((post) => {
       const tagLabel = post.tag.charAt(0).toUpperCase() + post.tag.slice(1);
       const color = getTagColor(post.tag);
-      const username = post.username || "Unknown User"; // fallback if missing
+      const username = post.username || "Unknown User";
+
+      const isOwner = currentUsername && post.username === currentUsername;
+      const deleteBtn = isOwner
+        ? `<button onclick="deletePost('${post.id}')">Delete</button>`
+        : "";
+      const signature = isOwner
+        ? ""
+        : `<small>Posted by <strong>${username}</strong></small>`;
 
       return `
         <article class="post" data-id="${post.id}">
@@ -193,13 +197,12 @@ function renderPosts(posts) {
             <span class="pill-label">${tagLabel}</span>
           </div>
           <h3>${post.title}</h3>
-          
           <p>${(post.content || "").replace(/\n/g, "<br>")}</p>
           ${post.image ? `<img src="${post.image}" alt="Post Image">` : ""}
           <div class="post-footer">
             <small>${new Date(post.timestamp).toLocaleString()}</small>
-            <small>Posted by <strong>${username}</strong></small>
-            <button onclick="deletePost('${post.id}')">Delete</button>
+            ${signature}
+            ${deleteBtn}
           </div>
         </article>
       `;
