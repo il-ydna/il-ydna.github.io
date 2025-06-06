@@ -146,7 +146,7 @@ async function updateHeader() {
 
   if (!idToken) {
     userControls.innerHTML = `
-      <button onclick="location.href='login.html'">Log in</button>
+      <button onclick="location.href='signup.html'">Log In/Sign Up</button>
     `;
     if (dropdownWrapper) dropdownWrapper.style.display = "none";
     return;
