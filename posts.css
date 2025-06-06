@@ -85,9 +85,58 @@ button {
 }
 
 .post {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding-bottom: 1rem;
-  margin-bottom: 1rem;
+  position: relative; /* allow absolute positioning inside */
+  padding: 1rem;
+  margin-block: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.post.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tag-pill {
+  position: absolute;
+  top: 1.5rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--pill-color, #ccc);
+  color: #576a78;
+  font-size: 0.65rem;
+  border-radius: 999px;
+  padding: 0;
+  width: 10px;
+  height: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: width 0.3s ease, padding 0.3s ease;
+  text-align: center;
+}
+
+.tag-pill:hover {
+  width: auto;
+  padding: 0 0.6rem;
+}
+
+.pill-label {
+  opacity: 0;
+  transition: opacity 0.3s ease 0.15s;
+  user-select: none;
+}
+
+.tag-pill:hover .pill-label {
+  opacity: 1;
+}
+
+.post.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .post h3 {
@@ -96,6 +145,17 @@ button {
 
 .post small {
   color: #ccc;
+}
+
+.post button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+.post-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
 }
 
 img {

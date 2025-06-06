@@ -75,23 +75,47 @@ function loadPosts() {
   fetch("https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/")
     .then((res) => res.json())
     .then((posts) => {
+      const tagColors = {
+        general: "#dcd2ca",
+        update: "#7f8181",
+        photo: "#5e6870",
+        thought: "#506c7f",
+        guest: "#293e51",
+      };
+
       postsSection.innerHTML = posts
-        .map(
-          (post) => `
+        .map((post) => {
+          const tagLabel = post.tag.charAt(0).toUpperCase() + post.tag.slice(1);
+          const color = tagColors[post.tag] || "#ccc";
+
+          return `
             <article class="post" data-id="${post.id}">
+              <div 
+                class="tag-pill" 
+                style="--pill-color: ${color};" 
+                title="${tagLabel}"
+              >
+                <span class="pill-label">${tagLabel}</span>
+              </div>
               <h3>${post.title}</h3>
               <p>${post.content.replace(/\n/g, "<br>")}</p>
               ${post.image ? `<img src="${post.image}" alt="Post Image">` : ""}
-              <small>${new Date(post.timestamp).toLocaleString()} • Tag: ${
+              <div class="post-footer">
+                <small>${new Date(post.timestamp).toLocaleString()} • Tag: ${
             post.tag
           }</small>
-              <button onclick="deletePost('${
-                post.id
-              }')" style="margin-top: 0.5rem;">Delete</button>
+                <button onclick="deletePost('${post.id}')">Delete</button>
+              </div>
             </article>
-          `
-        )
+          `;
+        })
         .join("");
+
+      requestAnimationFrame(() => {
+        document.querySelectorAll(".post").forEach((el, i) => {
+          setTimeout(() => el.classList.add("show"), i * 80);
+        });
+      });
     })
     .catch(() => {
       postsSection.innerHTML =
@@ -164,20 +188,3 @@ document.addEventListener("click", (e) => {
     options.style.display = "none";
   }
 });
-
-fetch("https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    title: "My First Post",
-    content: "This is a test post.",
-    image: "",
-    tag: "general",
-    timestamp: Date.now(),
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => console.log("Success:", data))
-  .catch((err) => console.error("Error:", err));
