@@ -17,10 +17,21 @@ body {
 }
 
 header {
-  color: transparent;
   padding: 0 1rem;
   padding: 0;
   margin: 2rem auto;
+  font-size: 1rem;
+}
+#user-controls {
+  display: flex;
+  align-items: center; /* vertically center */
+  gap: 1rem; /* space between username and button */
+  justify-content: flex-end;
+}
+/* for the logout button */
+header button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
 }
 
 nav {

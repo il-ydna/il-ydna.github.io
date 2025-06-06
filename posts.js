@@ -1,8 +1,53 @@
+const poolData = {
+  UserPoolId: "us-east-2_lXvCqndHZ",
+  ClientId: "b2k3m380g08hmtmdn9osi12vg",
+};
+const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+
+// Get fresh ID token from Cognito session
+function getIdToken() {
+  const user = userPool.getCurrentUser();
+  return new Promise((resolve) => {
+    if (!user) return resolve(null);
+    user.getSession((err, session) => {
+      if (err || !session.isValid()) return resolve(null);
+      resolve(session.getIdToken().getJwtToken());
+    });
+  });
+}
+
+function parseJwt(token) {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+async function getUsernameFromToken() {
+  const idToken = await getIdToken();
+  if (!idToken) return null;
+
+  const claims = parseJwt(idToken);
+  return claims?.["cognito:username"] || null;
+}
+
 const postForm = document.getElementById("postForm");
 const postsSection = document.getElementById("posts");
 
-// Load posts from localStorage on page load
-window.addEventListener("DOMContentLoaded", loadPosts);
+// Load posts on page load
+window.addEventListener("DOMContentLoaded", () => {
+  updateHeader();
+  loadPosts();
+});
 
 postForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -11,10 +56,8 @@ postForm.addEventListener("submit", async (e) => {
   const contentInput = postForm.querySelector('textarea[name="content"]');
   const tagInput = postForm.querySelector('input[name="tag"]');
 
-  // Remove existing error message
   removeValidationMessage();
 
-  // Custom validation
   if (!titleInput.value.trim()) {
     showValidationMessage("Give a title.");
     return;
@@ -23,11 +66,9 @@ postForm.addEventListener("submit", async (e) => {
   const formData = new FormData(postForm);
   const file = formData.get("image");
 
-  let imageBase64 = null;
+  let imageBase64 = "";
   if (file && file.size > 0) {
     imageBase64 = await toBase64(file);
-  } else {
-    imageBase64 = ""; // send empty string instead of null
   }
 
   const newPost = {
@@ -36,14 +77,24 @@ postForm.addEventListener("submit", async (e) => {
     image: imageBase64,
     tag: formData.get("tag") || "general",
     timestamp: Date.now(),
+    username: await getUsernameFromToken(),
   };
 
   try {
+    const idToken = await getIdToken();
+    if (!idToken) {
+      showValidationMessage("Please log in to submit posts.");
+      return;
+    }
+
     const response = await fetch(
       "https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
         body: JSON.stringify(newPost),
       }
     );
@@ -55,13 +106,12 @@ postForm.addEventListener("submit", async (e) => {
     }
 
     postForm.reset();
-    loadPosts(); // reload posts from Lambda
+    loadPosts();
   } catch (error) {
     showValidationMessage("Network error. Try again.");
   }
 });
 
-// Convert image file to base64 string
 function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -75,48 +125,52 @@ function getTagColor(tag) {
   const option = document.querySelector(
     `.dropdown-option[data-value="${tag}"]`
   );
-  return option?.dataset.color || "#ccc"; // fallback color
+  return option?.dataset.color || "#ccc";
 }
 
-function loadPosts() {
+async function updateHeader() {
+  const userControls = document.getElementById("user-controls");
+  const idToken = await getIdToken();
+
+  if (!idToken) {
+    // userControls.innerHTML = `
+    //   <button onclick="location.href='login.html'">Log in</button>
+    // `;
+    return;
+  }
+
+  const username = await getUsernameFromToken();
+  userControls.innerHTML = `
+    <div id="username">Signed in as ${username}</div>
+    <button id="logout">Log out</button>
+  `;
+
+  document.getElementById("logout").addEventListener("click", logout);
+}
+
+async function loadPosts() {
+  const idToken = await getIdToken();
+
+  if (idToken) {
+    // User is logged in
+    const username = await getUsernameFromToken();
+    document.getElementById(
+      "username"
+    ).textContent = `Signed in as ${username}`;
+    postForm.style.display = "block";
+  } else {
+    // Not logged in
+    postForm.style.display = "none";
+  }
+
+  // Fetch posts without auth header for public access
   fetch("https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/")
-    .then((res) => res.json())
+    .then((res) => {
+      if (!res.ok) throw new Error("Failed to load posts");
+      return res.json();
+    })
     .then((posts) => {
-      postsSection.innerHTML = posts;
-      postsSection.innerHTML = posts
-        .slice()
-        .reverse()
-        .map((post) => {
-          const tagLabel = post.tag.charAt(0).toUpperCase() + post.tag.slice(1);
-          const color = getTagColor(post.tag);
-
-          return `
-            <article class="post" data-id="${post.id}">
-              <div
-                class="tag-pill"
-                style="--pill-color: ${color};"
-                title="${tagLabel}"
-              >
-                <span class="pill-label">${tagLabel}</span>
-              </div>
-              <h3>${post.title}</h3>
-              <p>${(post.content || "").replace(/\n/g, "<br>")}</p>
-              ${post.image ? `<img src="${post.image}" alt="Post Image">` : ""}
-              <div class="post-footer">
-                <small>${new Date(post.timestamp).toLocaleString()}</small>
-                <button onclick="deletePost('${post.id}')">Delete</button>
-              </div>
-            </article>
-          `;
-        })
-        .join("");
-
-      // Fade-in cascade animation
-      requestAnimationFrame(() => {
-        document.querySelectorAll(".post").forEach((el, i) => {
-          setTimeout(() => el.classList.add("show"), i * 80);
-        });
-      });
+      renderPosts(posts);
     })
     .catch(() => {
       postsSection.innerHTML =
@@ -124,8 +178,49 @@ function loadPosts() {
     });
 }
 
+function renderPosts(posts) {
+  postsSection.innerHTML = posts
+    .slice()
+    .reverse()
+    .map((post) => {
+      const tagLabel = post.tag.charAt(0).toUpperCase() + post.tag.slice(1);
+      const color = getTagColor(post.tag);
+      const username = post.username || "Unknown User"; // fallback if missing
+
+      return `
+        <article class="post" data-id="${post.id}">
+          <div class="tag-pill" style="--pill-color: ${color};" title="${tagLabel}">
+            <span class="pill-label">${tagLabel}</span>
+          </div>
+          <h3>${post.title}</h3>
+          
+          <p>${(post.content || "").replace(/\n/g, "<br>")}</p>
+          ${post.image ? `<img src="${post.image}" alt="Post Image">` : ""}
+          <div class="post-footer">
+            <small>${new Date(post.timestamp).toLocaleString()}</small>
+            <small>Posted by <strong>${username}</strong></small>
+            <button onclick="deletePost('${post.id}')">Delete</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".post").forEach((el, i) => {
+      setTimeout(() => el.classList.add("show"), i * 80);
+    });
+  });
+}
+
 async function deletePost(id) {
   if (!confirm("Delete this post?")) return;
+
+  const idToken = await getIdToken();
+  if (!idToken) {
+    alert("Please log in to delete posts.");
+    return;
+  }
 
   try {
     const response = await fetch(
@@ -134,20 +229,22 @@ async function deletePost(id) {
       )}`,
       {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
       }
     );
 
     if (!response.ok) throw new Error("Delete failed");
 
-    loadPosts(); // Refresh posts list
+    loadPosts();
   } catch (err) {
     alert("Failed to delete post.");
     console.error(err);
   }
 }
 
-// Show a custom validation error above the form
 function showValidationMessage(message) {
   const errorDiv = document.createElement("div");
   errorDiv.id = "form-error";
@@ -159,12 +256,12 @@ function showValidationMessage(message) {
   postForm.append(errorDiv);
 }
 
-// Remove any previous validation error message
 function removeValidationMessage() {
   const existing = document.getElementById("form-error");
   if (existing) existing.remove();
 }
 
+// Dropdown handling
 const dropdown = document.getElementById("tagDropdown");
 const selected = dropdown.querySelector(".selected-option");
 const options = dropdown.querySelector(".dropdown-options");
@@ -190,7 +287,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// updates imageinput with the staged image's name
+// Image label update
 const imageInput = document.getElementById("imageInput");
 const imageLabel = document.querySelector("label[for='imageInput']");
 
@@ -205,3 +302,27 @@ imageInput.addEventListener("change", () => {
     imageLabel.textContent = "Choose Image";
   }
 });
+
+function logout() {
+  const poolData = {
+    UserPoolId: "us-east-2_lXvCqndHZ",
+    ClientId: "b2k3m380g08hmtmdn9osi12vg",
+  };
+  const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+  const cognitoUser = userPool.getCurrentUser();
+
+  if (cognitoUser) {
+    cognitoUser.signOut();
+  }
+
+  // Clear the token from localStorage
+  localStorage.removeItem("idToken");
+
+  // Redirect to login page or reload
+  window.location.reload();
+}
+
+const logoutBtn = document.getElementById("logout");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", logout);
+}

@@ -4,8 +4,16 @@
     <meta charset="UTF-8" />
     <title>Andy's Updates</title>
     <link rel="stylesheet" href="posts.css" />
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"
+    ></script>
+    <script defer src="posts.js"></script>
   </head>
   <body>
+    <header>
+      <div id="user-controls"></div>
+    </header>
     <!-- <header>
       <nav>
         <ul>
@@ -51,7 +59,7 @@
               <span class="dot" style="background: #5e6870"></span> Photo
             </div>
             <div class="dropdown-option" data-value="book" data-color="#506c7f">
-              <span class="dot" style="background: #3d5161"></span> Book
+              <span class="dot" style="background: #3d5161"></span> Reading
             </div>
             <div
               class="dropdown-option"
@@ -69,7 +77,5 @@
     </form>
 
     <section id="posts"></section>
-
-    <script src="posts.js"></script>
   </body>
 </html>

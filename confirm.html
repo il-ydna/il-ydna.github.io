@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Confirm Sign Up</title>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@5.2.3/dist/amazon-cognito-identity.min.js"></script>
+    <script src="confirm.js" defer></script>
+  </head>
+  <body>
+    <h2>Confirm Your Account</h2>
+    <input type="text" id="username" placeholder="Username" readonly />
+    <input type="text" id="code" placeholder="Confirmation Code" />
+    <button id="confirmBtn">Confirm</button>
+    <button id="resendBtn">Resend Code</button>
+  </body>
+</html>

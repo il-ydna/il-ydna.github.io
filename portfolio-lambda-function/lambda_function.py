@@ -20,6 +20,16 @@ bucket_name = os.environ['S3_BUCKET_NAME']
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(os.environ['TABLE_NAME']) 
 
+# helper funcs
+def get_user_claims(event):
+    """
+    Pull Cognito JWT claims that API Gateway’s authorizer injects.
+    """
+    try:
+        return event["requestContext"]["authorizer"]["jwt"]["claims"]
+    except KeyError:
+        # Shouldn’t happen unless the route isn’t protected
+        return {}
 
 def decimal_to_native(obj):
     if isinstance(obj, list):
@@ -82,7 +92,7 @@ def lambda_handler(event, context):
 
     return cors_response(405, {"error": "Method Not Allowed"})
 
-
+# handlers
 def handle_options(event):
     return cors_response(200, {"message": "CORS preflight successful"})
 
@@ -101,21 +111,25 @@ def handle_get(event):
 
 def handle_post(event):
     try:
-        body_str = event.get("body", "{}")
-        body = json.loads(body_str)
+        claims = get_user_claims(event)
+        user_sub   = claims.get("sub")
+        user_email = claims.get("email")
 
-        required_fields = ["title", "content", "timestamp"]
-        for field in required_fields:
+        body = json.loads(event.get("body", "{}"))
+        for field in ["title", "content", "timestamp"]:
             if field not in body:
                 return cors_response(400, {"error": f"Missing field: {field}"})
 
         post_id = str(uuid.uuid4())
-        body["id"] = post_id
+        body.update({
+            "id": post_id,
+            "userId": user_sub,
+            "userEmail": user_email
+        })
 
         image_base64 = body.get("image", "")
         if image_base64:
-            s3_url = upload_image_to_s3(image_base64, post_id)
-            body["image"] = s3_url  # Store public S3 URL
+            body["image"] = upload_image_to_s3(image_base64, post_id)
         else:
             body["image"] = ""
 
@@ -128,8 +142,24 @@ def handle_post(event):
         return cors_response(500, {"error": str(e), "traceback": tb})
 
 
+
 def handle_delete(event):
     try:
+        claims   = get_user_claims(event)
+        user_sub = claims.get("sub")
+
+        post_id = (event.get("queryStringParameters") or {}).get("id")
+        if not post_id:
+            return cors_response(400, {"error": "Missing 'id' query parameter"})
+
+        resp  = table.get_item(Key={"id": post_id})
+        item  = resp.get("Item")
+        if not item:
+            return cors_response(404, {"error": f"Post {post_id} not found"})
+
+        # 🚫 If the caller isn’t the owner, block the delete
+        if item.get("userId") != user_sub:
+            return cors_response(403, {"error": "Not your post"})
         print('trying to delete here yay')
         qs_params = event.get("queryStringParameters") or {}
         post_id = qs_params.get("id")
@@ -183,7 +213,7 @@ def cors_response(status_code, body_dict):
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
-            "Access-Control-Allow-Headers": "Content-Type"
+            "Access-Control-Allow-Headers": "Content-Type,Authorization"
         },
         "body": json.dumps(body_dict)
     }
