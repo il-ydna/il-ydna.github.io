@@ -34,44 +34,49 @@
 
       <div class="button-row">
         <label for="imageInput" class="img-uploader">Choose Image</label>
-        <div class="custom-dropdown" id="tagDropdown">
-          <div class="selected-option button-style">Select a tag</div>
-          <div class="dropdown-options">
-            <div
-              class="dropdown-option"
-              data-value="general"
-              data-color="#dcd2ca"
-            >
-              <span class="dot" style="background: #97938e"></span> General
+        <div id="tag-dropdown-wrapper">
+          <div class="custom-dropdown" id="tagDropdown">
+            <div class="selected-option button-style">Select a tag</div>
+            <div class="dropdown-options">
+              <div
+                class="dropdown-option"
+                data-value="general"
+                data-color="#dcd2ca"
+              >
+                <span class="dot" style="background: #97938e"></span> General
+              </div>
+              <div
+                class="dropdown-option"
+                data-value="project"
+                data-color="#7f8181"
+              >
+                <span class="dot" style="background: #6a747c"></span> Project
+              </div>
+              <div
+                class="dropdown-option"
+                data-value="photo"
+                data-color="#5e6870"
+              >
+                <span class="dot" style="background: #5e6870"></span> Photo
+              </div>
+              <div
+                class="dropdown-option"
+                data-value="book"
+                data-color="#506c7f"
+              >
+                <span class="dot" style="background: #3d5161"></span> Reading
+              </div>
+              <div
+                class="dropdown-option"
+                data-value="guest"
+                data-color="#293e51"
+              >
+                <span class="dot" style="background: #293e51"></span> Guest
+              </div>
             </div>
-            <div
-              class="dropdown-option"
-              data-value="project"
-              data-color="#7f8181"
-            >
-              <span class="dot" style="background: #6a747c"></span> Project
-            </div>
-            <div
-              class="dropdown-option"
-              data-value="photo"
-              data-color="#5e6870"
-            >
-              <span class="dot" style="background: #5e6870"></span> Photo
-            </div>
-            <div class="dropdown-option" data-value="book" data-color="#506c7f">
-              <span class="dot" style="background: #3d5161"></span> Reading
-            </div>
-            <div
-              class="dropdown-option"
-              data-value="guest"
-              data-color="#293e51"
-            >
-              <span class="dot" style="background: #293e51"></span> Guest
-            </div>
+            <input type="hidden" name="tag" id="tagInput" required />
           </div>
-          <input type="hidden" name="tag" id="tagInput" required />
         </div>
-
         <button type="submit">Add Post</button>
       </div>
     </form>

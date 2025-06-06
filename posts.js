@@ -3,6 +3,7 @@ const poolData = {
   ClientId: "b2k3m380g08hmtmdn9osi12vg",
 };
 const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+const OWNER_ID = "b19b5500-0021-70d5-4f79-c9966e8d1abd";
 
 // Get fresh ID token from Cognito session
 function getIdToken() {
@@ -14,6 +15,12 @@ function getIdToken() {
       resolve(session.getIdToken().getJwtToken());
     });
   });
+}
+async function getUserIdFromToken() {
+  const idToken = await getIdToken();
+  if (!idToken) return null;
+  const claims = parseJwt(idToken);
+  return claims?.sub || null;
 }
 
 function parseJwt(token) {
@@ -79,6 +86,10 @@ postForm.addEventListener("submit", async (e) => {
     timestamp: Date.now(),
     username: await getUsernameFromToken(),
   };
+  const currentUserId = await getUserIdFromToken();
+  if (currentUserId !== OWNER_ID) {
+    newPost.tag = "guest";
+  }
 
   try {
     const idToken = await getIdToken();
@@ -131,19 +142,29 @@ function getTagColor(tag) {
 async function updateHeader() {
   const userControls = document.getElementById("user-controls");
   const idToken = await getIdToken();
+  const dropdownWrapper = document.getElementById("tag-dropdown-wrapper");
 
   if (!idToken) {
     userControls.innerHTML = `
       <button onclick="location.href='login.html'">Log in</button>
     `;
+    if (dropdownWrapper) dropdownWrapper.style.display = "none";
     return;
   }
 
   const username = await getUsernameFromToken();
+  const userId = await getUserIdFromToken();
+
   userControls.innerHTML = `
     <div id="username">Signed in as ${username}</div>
     <button id="logout">Log out</button>
   `;
+
+  // Hide tag dropdown if user is not the owner
+  if (userId !== OWNER_ID && dropdownWrapper) {
+    dropdownWrapper.style.visibility = "hidden";
+    dropdownWrapper.style.height = "0";
+  }
 
   document.getElementById("logout").addEventListener("click", logout);
 }
