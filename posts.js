@@ -71,28 +71,30 @@ function toBase64(file) {
   });
 }
 
+function getTagColor(tag) {
+  const option = document.querySelector(
+    `.dropdown-option[data-value="${tag}"]`
+  );
+  return option?.dataset.color || "#ccc"; // fallback color
+}
+
 function loadPosts() {
   fetch("https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/")
     .then((res) => res.json())
     .then((posts) => {
-      const tagColors = {
-        general: "#dcd2ca",
-        update: "#7f8181",
-        photo: "#5e6870",
-        thought: "#506c7f",
-        guest: "#293e51",
-      };
-
+      postsSection.innerHTML = posts;
       postsSection.innerHTML = posts
+        .slice()
+        .reverse()
         .map((post) => {
           const tagLabel = post.tag.charAt(0).toUpperCase() + post.tag.slice(1);
-          const color = tagColors[post.tag] || "#ccc";
+          const color = getTagColor(post.tag);
 
           return `
             <article class="post" data-id="${post.id}">
-              <div 
-                class="tag-pill" 
-                style="--pill-color: ${color};" 
+              <div
+                class="tag-pill"
+                style="--pill-color: ${color};"
                 title="${tagLabel}"
               >
                 <span class="pill-label">${tagLabel}</span>
@@ -109,6 +111,7 @@ function loadPosts() {
         })
         .join("");
 
+      // Fade-in cascade animation
       requestAnimationFrame(() => {
         document.querySelectorAll(".post").forEach((el, i) => {
           setTimeout(() => el.classList.add("show"), i * 80);
@@ -184,5 +187,21 @@ dropdown.querySelectorAll(".dropdown-option").forEach((option) => {
 document.addEventListener("click", (e) => {
   if (!dropdown.contains(e.target)) {
     options.style.display = "none";
+  }
+});
+
+// updates imageinput with the staged image's name
+const imageInput = document.getElementById("imageInput");
+const imageLabel = document.querySelector("label[for='imageInput']");
+
+imageInput.addEventListener("change", () => {
+  if (imageInput.files.length > 0) {
+    const fileName = imageInput.files[0].name;
+    const maxLen = 20;
+    const truncated =
+      fileName.length > maxLen ? fileName.slice(0, maxLen) + "…" : fileName;
+    imageLabel.innerHTML = `<span style="text-decoration: underline;">${truncated}</span>`;
+  } else {
+    imageLabel.textContent = "Choose Image";
   }
 });

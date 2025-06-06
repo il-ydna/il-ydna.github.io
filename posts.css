@@ -107,7 +107,7 @@ button {
   display: inline-flex;
   align-items: center;
   background-color: var(--pill-color, #ccc);
-  color: #ccc;
+  color: #ece3e4;
   font-size: 0.65rem;
   border-radius: 999px;
   padding: 0;
@@ -126,12 +126,13 @@ button {
 
 .pill-label {
   opacity: 0;
-  transition: opacity 0.3s ease 0.15s;
+  transition: none;
   user-select: none;
 }
 
 .tag-pill:hover .pill-label {
   opacity: 1;
+  transition: opacity 0.3s ease 0.15s;
 }
 
 .post.show {
@@ -165,10 +166,14 @@ img {
 }
 
 .button-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   margin-top: 0.5rem;
+}
+
+.button-row > *:nth-child(2) {
+  justify-self: center;
 }
 
 button:hover {
@@ -214,6 +219,7 @@ button:hover {
   position: relative;
   display: inline-block;
   font-family: "Times New Roman";
+  width: 8rem;
 }
 
 /* This inherits button-style look */

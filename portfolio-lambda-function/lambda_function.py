@@ -8,6 +8,7 @@ import os
 import base64
 from botocore.exceptions import ClientError
 from botocore.config import Config
+from urllib.parse import urlparse
 
 s3 = boto3.client(
     's3',
@@ -129,6 +130,7 @@ def handle_post(event):
 
 def handle_delete(event):
     try:
+        print('trying to delete here yay')
         qs_params = event.get("queryStringParameters") or {}
         post_id = qs_params.get("id")
         if not post_id:
@@ -143,9 +145,11 @@ def handle_delete(event):
 
         # 2. Delete image from S3 if it exists
         image_url = item.get("image", "")
+        print(f"Image URL from DynamoDB: {image_url}")
         if image_url:
             parsed_url = urlparse(image_url)
-            key = parsed_url.path.lstrip('/')  # removes leading slash
+            key = parsed_url.path.lstrip('/')
+            print(f"Parsed S3 key: '{key}' from URL: {image_url}")
 
             try:
                 s3.delete_object(Bucket=bucket_name, Key=key)
