@@ -172,13 +172,10 @@ async function updateHeader() {
 async function loadPosts() {
   const idToken = await getIdToken();
   let username = null;
+  let userid = null;
 
   if (idToken) {
-    username = await getUsernameFromToken();
-    document.getElementById(
-      "username"
-    ).textContent = `Signed in as ${username}`;
-    postForm.style.display = "block";
+    userid = await getUserIdFromToken();
   } else {
     postForm.style.display = "none";
   }
@@ -188,14 +185,18 @@ async function loadPosts() {
       if (!res.ok) throw new Error("Failed to load posts");
       return res.json();
     })
-    .then((posts) => renderPosts(posts, username)) // pass username
+    .then((posts) => {
+      // Sort by timestamp (ascending: oldest first)
+      posts.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      renderPosts(posts, userid); // pass sorted posts
+    })
     .catch(() => {
       postsSection.innerHTML =
         "<p style='color:red; text-align:center;'>Failed to load posts.</p>";
     });
 }
 
-function renderPosts(posts, currentUsername = null) {
+function renderPosts(posts, currentUserId = null) {
   postsSection.innerHTML = posts
     .slice()
     .reverse()
@@ -204,11 +205,14 @@ function renderPosts(posts, currentUsername = null) {
       const color = getTagColor(post.tag);
       const username = post.username || "Unknown User";
 
-      const isOwner = currentUsername && post.username === currentUsername;
-      const deleteBtn = isOwner
-        ? `<button onclick="deletePost('${post.id}')">Delete</button>`
-        : "";
-      const signature = isOwner
+      const isPostOwner = post.userId === currentUserId;
+      const isSiteOwner = currentUserId === OWNER_ID;
+
+      const deleteBtn =
+        isPostOwner || isSiteOwner
+          ? `<button onclick="deletePost('${post.id}')">Delete</button>`
+          : "";
+      const signature = isPostOwner
         ? ""
         : `<small>Posted by <strong>${username}</strong></small>`;
 
