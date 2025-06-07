@@ -293,3 +293,26 @@ button:hover {
   display: inline-block;
   flex-shrink: 0;
 }
+
+@media (max-width: 768px) {
+  /* Let the whole page flow edge-to-edge */
+  body {
+    max-width: 100%;
+    margin: 0; /* optional: flush sides */
+    padding: 0.75rem; /* a little breathing room */
+  }
+
+  /* Form and posts containers stretch full width */
+  form,
+  #posts {
+    margin: 0; /* remove side gaps */
+    padding: 0.75rem;
+  }
+
+  /* Each individual post fills the width */
+  .post {
+    width: 100%;
+    margin-inline: 0; /* no left/right margin */
+    box-sizing: border-box;
+  }
+}
