@@ -65,25 +65,29 @@ postForm.addEventListener("submit", async (e) => {
   const titleInput = postForm.querySelector('input[name="title"]');
   const contentInput = postForm.querySelector('textarea[name="content"]');
   const tagInput = postForm.querySelector('input[name="tag"]');
+  const formData = new FormData(postForm); // ✅ moved here
+  const files = imageInput.files;
 
   if (!titleInput.value.trim()) {
     showValidationMessage("Give a title.");
     return;
   }
 
-  const formData = new FormData(postForm);
-  const file = formData.get("image");
+  const postId = editingPostId || crypto.randomUUID();
+  const imageUrls = [];
 
-  let imageBase64 = "";
-  if (file && file.size > 0) {
-    imageBase64 = await toBase64(file);
+  for (let i = 0; i < files.length; i++) {
+    const url = await uploadImageToS3(files[i], postId, i);
+    imageUrls.push(url);
   }
 
   const newPost = {
+    id: editingPostId || postId,
     title: formData.get("title"),
     content: formData.get("content"),
-    image: imageBase64,
+    images: imageUrls,
     tag: formData.get("tag") || "general",
+    layout: formData.get("layout") || "grid",
     timestamp: Date.now(),
     username: await getUsernameFromToken(),
     pageOwnerId: OWNER_ID,
@@ -126,6 +130,13 @@ postForm.addEventListener("submit", async (e) => {
     const idToScroll = editingPostId; // store before reset
     editingPostId = null;
     postForm.reset();
+    previewContainer.innerHTML = "";
+    layoutInput.value = "grid";
+    layoutSelected.textContent = "Grid";
+    layoutSelector.style.display = "none";
+    // Reset image input label
+    imageLabel.textContent = "Choose/Drop Image";
+    imageInput.value = ""; // Clear actual file input
     loadPosts();
 
     // Scroll back to edited post
@@ -142,13 +153,23 @@ postForm.addEventListener("submit", async (e) => {
   }
 });
 
-function toBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+async function uploadImageToS3(file, postId, index) {
+  const presignRes = await fetch(
+    `https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/?presign&post_id=${postId}&index=${index}`,
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${await getIdToken()}` },
+    }
+  );
+  const { upload_url, public_url } = await presignRes.json();
+
+  await fetch(upload_url, {
+    method: "PUT",
+    headers: { "Content-Type": "image/jpeg", "x-amz-acl": "public-read" },
+    body: file,
   });
+
+  return public_url;
 }
 
 function getTagColor(tag) {
@@ -215,6 +236,49 @@ async function loadPosts() {
     });
 }
 
+function renderGrid(images) {
+  return `
+    <div class="post-image-grid">
+      ${images
+        .map((url) => `<img src="${url}" alt="Image" class="grid-image">`)
+        .join("")}
+    </div>
+  `;
+}
+
+function renderStack(images) {
+  return `
+    <div class="post-image-stack">
+      ${images
+        .map((url) => `<img src="${url}" alt="Image" class="stack-image">`)
+        .join("")}
+    </div>
+  `;
+}
+
+function renderCarousel(images) {
+  if (!images.length) return "";
+
+  const id = "carousel-" + Math.random().toString(36).slice(2, 9);
+
+  return `
+    <div class="carousel-container" id="${id}">
+      <div class="carousel-images">
+        ${images
+          .map(
+            (url, i) =>
+              `<img src="${url}" class="carousel-img ${
+                i === 0 ? "active" : ""
+              }">`
+          )
+          .join("")}
+      </div>
+      <div class="carousel-nav prev" onclick="changeSlide('${id}', -1)">‹</div>
+      <div class="carousel-nav next" onclick="changeSlide('${id}', 1)">›</button>
+    </div>
+  `;
+}
+
 function renderPosts(posts, currentUserId = null) {
   postsSection.innerHTML = posts
     .slice()
@@ -223,11 +287,6 @@ function renderPosts(posts, currentUserId = null) {
       const tagLabel = post.tag.charAt(0).toUpperCase() + post.tag.slice(1);
       const color = getTagColor(post.tag);
       const username = post.username || "Unknown User";
-
-      console.log("POST", post);
-      console.log("currentUserId", currentUserId);
-      console.log("post.userId", post.userId);
-      console.log("equal?", post.userId === currentUserId);
 
       const isPostOwner = post.userId && post.userId === currentUserId;
       const isSiteOwner = currentUserId === OWNER_ID;
@@ -244,22 +303,40 @@ function renderPosts(posts, currentUserId = null) {
         ? ""
         : `<small>Posted by <strong>${username}</strong></small>`;
 
+      // 🔁 Add this image layout logic
+      let imageHTML = "";
+      if (Array.isArray(post.images) && post.images.length > 0) {
+        switch (post.layout) {
+          case "carousel":
+            imageHTML = renderCarousel(post.images);
+            break;
+          case "stack":
+            imageHTML = renderStack(post.images);
+            break;
+          case "grid":
+          default:
+            imageHTML = renderGrid(post.images);
+        }
+      } else if (post.image) {
+        imageHTML = `<img src="${post.image}" alt="Post Image" class="preview-image">`;
+      }
+
       return `
-        <article class="post" data-id="${post.id}">
-          <div class="tag-pill" style="--pill-color: ${color};" title="${tagLabel}">
-            <span class="pill-label">${tagLabel}</span>
-          </div>
-          <h3>${post.title}</h3>
-          <p>${(post.content || "").replace(/\n/g, "<br>")}</p>
-          ${post.image ? `<img src="${post.image}" alt="Post Image">` : ""}
-          <div class="post-footer">
-            <small>${new Date(post.timestamp).toLocaleString()}</small>
-            ${signature}
-            ${deleteBtn}
-            ${editBtn}
-          </div>
-        </article>
-      `;
+    <article class="post" data-id="${post.id}">
+      <div class="tag-pill" style="--pill-color: ${color};" title="${tagLabel}">
+        <span class="pill-label">${tagLabel}</span>
+      </div>
+      <h3>${post.title}</h3>
+      <p>${(post.content || "").replace(/\n/g, "<br>")}</p>
+      ${imageHTML}
+      <div class="post-footer">
+        <small>${new Date(post.timestamp).toLocaleString()}</small>
+        ${signature}
+        ${deleteBtn}
+        ${editBtn}
+      </div>
+    </article>
+  `;
     })
     .join("");
 
@@ -268,6 +345,22 @@ function renderPosts(posts, currentUserId = null) {
       setTimeout(() => el.classList.add("show"), i * 80);
     });
   });
+}
+
+function changeSlide(id, direction) {
+  const container = document.getElementById(id);
+  if (!container) return;
+
+  const images = container.querySelectorAll(".carousel-img");
+  const currentIndex = Array.from(images).findIndex((img) =>
+    img.classList.contains("active")
+  );
+  if (currentIndex === -1) return;
+
+  images[currentIndex].classList.remove("active");
+
+  const nextIndex = (currentIndex + direction + images.length) % images.length;
+  images[nextIndex].classList.add("active");
 }
 
 async function editPost(id) {
@@ -286,13 +379,25 @@ async function editPost(id) {
   postForm.querySelector('input[name="title"]').value = post.title;
   postForm.querySelector('textarea[name="content"]').value = post.content;
   postForm.querySelector('input[name="tag"]').value = post.tag;
+  layoutInput.value = post.layout || "grid";
+  layoutSelected.textContent =
+    (post.layout || "grid").charAt(0).toUpperCase() +
+    (post.layout || "grid").slice(1);
 
-  const imageLabel = document.querySelector("label[for='imageInput']");
-  if (post.image) {
-    imageLabel.innerHTML = `<span style="text-decoration: underline;">[Current Image]</span>`;
-  } else {
-    imageLabel.textContent = "Choose Image";
-  }
+  // 🟨 Show layout selector if multiple images
+  layoutSelector.style.display = post.images?.length >= 2 ? "block" : "none";
+
+  // 🟩 Show image previews
+  previewContainer.innerHTML = "";
+  if (layoutSelector) previewContainer.appendChild(layoutSelector);
+
+  (post.images || []).forEach((url) => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "Preview";
+    img.classList.add("preview-image");
+    previewContainer.appendChild(img);
+  });
 
   editingPostId = id;
 }
@@ -371,9 +476,40 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// Image label update
+const imageDropZone = document.getElementById("image-drop-zone");
 const imageInput = document.getElementById("imageInput");
-const imageLabel = document.querySelector("label[for='imageInput']");
+const imageLabel = imageDropZone.querySelector("label");
+
+imageDropZone.addEventListener("click", (e) => {
+  if (e.target.tagName === "LABEL" || e.target === imageInput) {
+    return; // Let the native behavior happen
+  }
+  imageInput.click(); // Only fire if clicking outside label/input
+});
+
+imageDropZone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  imageDropZone.classList.add("dragover");
+});
+
+imageDropZone.addEventListener("dragleave", () => {
+  imageDropZone.classList.remove("dragover");
+});
+
+imageDropZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  imageDropZone.classList.remove("dragover");
+
+  if (e.dataTransfer.files.length > 0) {
+    imageInput.files = e.dataTransfer.files;
+    const fileName = e.dataTransfer.files[0].name;
+    const maxLen = 20;
+    const truncated =
+      fileName.length > maxLen ? fileName.slice(0, maxLen) + "…" : fileName;
+    imageLabel.innerHTML = `<span style="text-decoration: underline;">${truncated}</span>`;
+    showImagePreview(e.dataTransfer.files);
+  }
+});
 
 imageInput.addEventListener("change", () => {
   if (imageInput.files.length > 0) {
@@ -382,10 +518,57 @@ imageInput.addEventListener("change", () => {
     const truncated =
       fileName.length > maxLen ? fileName.slice(0, maxLen) + "…" : fileName;
     imageLabel.innerHTML = `<span style="text-decoration: underline;">${truncated}</span>`;
+    showImagePreview(imageInput.files);
   } else {
     imageLabel.textContent = "Choose Image";
   }
 });
+
+const previewContainer = document.getElementById("image-preview-container");
+const layoutSelector = document.getElementById("layout-selector");
+
+function showImagePreview(files) {
+  const existingSelector = document.getElementById("layout-selector");
+
+  // Clear preview area but keep the layout dropdown
+  previewContainer.innerHTML = "";
+  if (existingSelector) previewContainer.appendChild(existingSelector);
+
+  const layout = layoutInput.value || "grid";
+
+  const imageUrls = [];
+
+  const readAll = Array.from(files).map(
+    (file) =>
+      new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      })
+  );
+
+  Promise.all(readAll).then((urls) => {
+    urls.forEach((url) => imageUrls.push(url));
+
+    let html = "";
+    switch (layout) {
+      case "carousel":
+        html = renderCarousel(imageUrls);
+        break;
+      case "stack":
+        html = renderStack(imageUrls);
+        break;
+      case "grid":
+      default:
+        html = renderGrid(imageUrls);
+    }
+
+    previewContainer.innerHTML = html;
+    if (existingSelector) previewContainer.appendChild(existingSelector);
+  });
+
+  layoutSelector.style.display = files.length >= 2 ? "block" : "none";
+}
 
 function logout() {
   const poolData = {
@@ -410,3 +593,34 @@ const logoutBtn = document.getElementById("logout");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", logout);
 }
+
+const layoutDropdown = document.getElementById("layout-selector");
+const layoutSelected = layoutDropdown.querySelector(".selected-option");
+const layoutOptions = layoutDropdown.querySelector(".dropdown-options");
+const layoutInput = document.getElementById("layoutInput");
+
+layoutSelected.addEventListener("click", () => {
+  layoutOptions.style.display =
+    layoutOptions.style.display === "block" ? "none" : "block";
+});
+
+layoutOptions.querySelectorAll(".dropdown-option").forEach((option) => {
+  option.addEventListener("click", () => {
+    const value = option.getAttribute("data-value");
+    layoutSelected.textContent = option.textContent;
+    layoutInput.value = value;
+    layoutOptions.style.display = "none";
+
+    // Re-render image preview using current files
+    const currentFiles = imageInput.files;
+    if (currentFiles && currentFiles.length > 0) {
+      showImagePreview(currentFiles);
+    }
+  });
+});
+
+document.addEventListener("click", (e) => {
+  if (!layoutDropdown.contains(e.target)) {
+    layoutOptions.style.display = "none";
+  }
+});

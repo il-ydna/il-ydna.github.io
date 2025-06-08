@@ -81,6 +81,10 @@ def lambda_handler(event, context):
     if method == "OPTIONS":
         return handle_options(event)
 
+    qs = event.get("queryStringParameters") or {}
+    if method == "GET" and "presign" in qs:
+        return handle_presign(event)
+
     if method == "GET":
         return handle_get(event)
 
@@ -111,6 +115,37 @@ def handle_get(event):
         print(f"GET error: {tb}")
         return cors_response(500, {"error": str(e), "traceback": tb})
 
+def handle_presign(event):
+    try:
+        claims = get_user_claims(event)
+        user_sub = claims.get("sub", "anonymous")
+
+        qs = event.get("queryStringParameters") or {}
+        post_id = qs.get("post_id")
+        index = qs.get("index", "0")
+
+        if not post_id:
+            return cors_response(400, {"error": "Missing post_id"})
+
+        key = f"posts/{post_id}_{index}.jpg"
+
+        url = s3.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": bucket_name,
+                "Key": key,
+                "ContentType": "image/jpeg",
+                "ACL": "public-read"  # ✅ THIS MUST MATCH YOUR FRONTEND UPLOAD HEADERS
+            },
+            ExpiresIn=300
+        )
+
+        public_url = f"https://{bucket_name}.s3.{s3.meta.region_name}.amazonaws.com/{key}"
+        return cors_response(200, {"upload_url": url, "public_url": public_url})
+
+    except Exception as e:
+        return cors_response(500, {"error": str(e), "traceback": traceback.format_exc()})
+
 
 def handle_post(event):
     try:
@@ -124,19 +159,20 @@ def handle_post(event):
                 return cors_response(400, {"error": f"Missing field: {field}"})
 
         post_id = str(uuid.uuid4())
-        body.update({
+        post_item = {
             "id": post_id,
             "userId": user_sub,
-            "userEmail": user_email
-        })
+            "userEmail": user_email,
+            "title": body.get("title"),
+            "content": body.get("content"),
+            "tag": body.get("tag", "general"),
+            "timestamp": body.get("timestamp"),
+            "images": body.get("images", []), 
+            "layout": body.get("layout", "grid"),
+            "pageOwnerId": user_sub  # Optional but future-proof
+        }
 
-        image_base64 = body.get("image", "")
-        if image_base64:
-            body["image"] = upload_image_to_s3(image_base64, post_id)
-        else:
-            body["image"] = ""
-
-        table.put_item(Item=body)
+        table.put_item(Item=post_item)
         return cors_response(200, {"message": "Post saved successfully", "id": post_id})
 
     except Exception as e:
@@ -168,19 +204,16 @@ def handle_delete(event):
         if user_sub != post_owner and user_sub != page_owner:
             return cors_response(403, {"error": "Not authorized to delete this post"})
 
-        # Delete image from S3 if present
-        image_url = item.get("image", "")
-        print(f"Image URL from DynamoDB: {image_url}")
-        if image_url:
-            parsed_url = urlparse(image_url)
+        image_urls = item.get("images", [])
+        for url in image_urls:
+            parsed_url = urlparse(url)
             key = parsed_url.path.lstrip('/')
-            print(f"Parsed S3 key: '{key}' from URL: {image_url}")
-
             try:
                 s3.delete_object(Bucket=bucket_name, Key=key)
                 print(f"Deleted image {key} from S3")
             except Exception as e:
-                print(f"Error deleting image from S3: {e}")
+                print(f"Error deleting image {key} from S3: {e}")
+
 
         # Delete post from DynamoDB
         response = table.delete_item(
@@ -225,24 +258,30 @@ def handle_put(event):
         if item.get("userId") != user_sub:
             return cors_response(403, {"error": "Not your post"})
 
-        # Handle optional image replacement
-        image_base64 = body.get("image")
-        if image_base64 and image_base64 != item.get("image"):
-            # Delete old image
-            if item.get("image"):
-                parsed_url = urlparse(item["image"])
+        new_images = body.get("images", [])
+        existing_images = item.get("images", [])
+
+        # Delete all old images from S3 if new images are provided
+        if new_images and new_images != existing_images:
+            for url in existing_images:
+                parsed_url = urlparse(url)
                 key = parsed_url.path.lstrip('/')
                 try:
                     s3.delete_object(Bucket=bucket_name, Key=key)
                 except Exception as e:
-                    print(f"Error deleting old image: {e}")
-            # Upload new one
-            body["image"] = upload_image_to_s3(image_base64, post_id)
+                    print(f"Failed to delete old image: {e}")
+
+            uploaded = []
+            for idx, base64_img in enumerate(new_images):
+                if base64_img:
+                    uploaded.append(upload_image_to_s3(base64_img, f"{post_id}_{idx}"))
+            body["images"] = uploaded
         else:
-            body["image"] = item.get("image", "")
+            body["images"] = existing_images
+
 
         # Only allow certain fields to be updated
-        allowed_fields = ["title", "content", "tag", "image", "timestamp"]
+        allowed_fields = ["title", "content", "tag", "images", "layout", "timestamp"]
         updated_data = {k: v for k, v in body.items() if k in allowed_fields}
         updated_data["id"] = post_id
         updated_data["userId"] = user_sub

@@ -30,8 +30,6 @@
         rows="5"
       ></textarea>
 
-      <input type="file" id="imageInput" name="image" accept="image/*" hidden />
-
       <div class="button-row">
         <div id="image-drop-zone" class="img-uploader" tabindex="0">
           <label for="imageInput">Choose/Drop Image</label>
@@ -40,6 +38,7 @@
             id="imageInput"
             name="image"
             accept="image/*"
+            multiple
             hidden
           />
         </div>
@@ -88,6 +87,17 @@
         </div>
 
         <button type="submit">Add Post</button>
+      </div>
+      <div id="image-preview-container" class="image-preview-container">
+        <div id="layout-selector" class="layout-dropdown" style="display: none">
+          <div class="selected-option">Grid</div>
+          <div class="dropdown-options">
+            <div class="dropdown-option" data-value="grid">Grid</div>
+            <div class="dropdown-option" data-value="carousel">Carousel</div>
+            <div class="dropdown-option" data-value="stack">Stack</div>
+          </div>
+          <input type="hidden" name="layout" id="layoutInput" value="grid" />
+        </div>
       </div>
     </form>
 

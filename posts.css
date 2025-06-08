@@ -317,3 +317,170 @@ button:hover {
     box-sizing: border-box;
   }
 }
+
+.image-preview-container {
+  position: relative;
+  margin-top: 0.5rem;
+}
+
+.layout-dropdown {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: 2px outset buttonborder;
+  border-radius: 4px;
+  font-family: "Times New Roman";
+  min-width: 7rem;
+}
+
+.image-preview-container:hover .layout-dropdown {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.layout-dropdown {
+  position: absolute;
+  top: 0.5rem;
+  right: 0rem;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: 2px outset buttonborder;
+  border-radius: 4px;
+  font-family: "Times New Roman";
+  min-width: 4rem;
+  text-align: center;
+}
+
+.layout-dropdown .selected-option {
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: white;
+  user-select: none;
+}
+
+.layout-dropdown .dropdown-options {
+  display: none;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.layout-dropdown .dropdown-option {
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: white;
+}
+
+.layout-dropdown .dropdown-option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.preview-image {
+  max-width: 100%;
+  margin-top: 0.5rem;
+  border-radius: 0px;
+}
+
+.grid-image {
+  max-width: 100%;
+  margin-top: 0.5rem;
+  border-radius: 0;
+}
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+.stack-layout img {
+  display: block;
+  margin-bottom: 0.5rem;
+  max-width: 100%;
+}
+
+.stack-image {
+  display: block;
+  margin-bottom: 0.5rem;
+  max-width: 100%;
+  border-radius: 0; /* or customize this independently */
+}
+
+.carousel-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.carousel-images {
+  display: flex;
+  transition: transform 0.3s ease;
+}
+
+.carousel-img {
+  border-radius: 0px;
+  display: none;
+  width: 100%;
+}
+
+.carousel-img.active {
+  display: block;
+}
+
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(30, 30, 30, 0.6);
+  color: white;
+  border: none;
+  font-size: 1.5rem;
+  padding: 0.3rem 0.6em;
+  cursor: pointer;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.carousel-container:hover .carousel-nav {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.carousel-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 0.5rem;
+  height: 0.5rem;
+
+  background-color: rgba(0, 0, 0, 0.2);
+  color: white;
+  font-family: "Times New Roman";
+  font-size: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.carousel-nav:hover {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.carousel-container:hover .carousel-nav {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.carousel-nav.prev {
+  left: 0.5rem;
+}
+.carousel-nav.next {
+  right: 0.5rem;
+}
