@@ -86,7 +86,7 @@
           </div>
         </div>
 
-        <button type="submit">Add Post</button>
+        <button type="submit" id="submitPostBtn">Add Post</button>
       </div>
       <div id="image-preview-container" class="image-preview-container">
         <div id="layout-selector" class="layout-dropdown" style="display: none">
@@ -99,6 +99,9 @@
           <input type="hidden" name="layout" id="layoutInput" value="grid" />
         </div>
       </div>
+      <button type="button" id="cancelEditBtn" style="display: none">
+        Cancel Edit
+      </button>
     </form>
 
     <section id="posts"></section>

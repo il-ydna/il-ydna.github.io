@@ -139,6 +139,10 @@ postForm.addEventListener("submit", async (e) => {
     imageInput.value = ""; // Clear actual file input
     loadPosts();
 
+    document.getElementById("submitPostBtn").textContent = "Add Post";
+    postForm.classList.remove("editing");
+    document.getElementById("cancelEditBtn").style.display = "none";
+
     // Scroll back to edited post
     setTimeout(() => {
       const updatedEl = document.querySelector(`[data-id="${idToScroll}"]`);
@@ -332,8 +336,12 @@ function renderPosts(posts, currentUserId = null) {
       <div class="post-footer">
         <small>${new Date(post.timestamp).toLocaleString()}</small>
         ${signature}
-        ${deleteBtn}
-        ${editBtn}
+        <div class="post-footer">
+          <div class="post-actions">
+            ${editBtn}
+            ${deleteBtn}
+          </div>
+        </div>
       </div>
     </article>
   `;
@@ -400,6 +408,9 @@ async function editPost(id) {
   });
 
   editingPostId = id;
+  postForm.classList.add("editing");
+  document.getElementById("cancelEditBtn").style.display = "inline-block";
+  document.getElementById("submitPostBtn").textContent = "Edit Post";
 }
 
 async function deletePost(id) {
@@ -530,12 +541,14 @@ const layoutSelector = document.getElementById("layout-selector");
 function showImagePreview(files) {
   const existingSelector = document.getElementById("layout-selector");
 
-  // Clear preview area but keep the layout dropdown
-  previewContainer.innerHTML = "";
+  // 🔥 Clear entire container safely
+  while (previewContainer.firstChild) {
+    previewContainer.removeChild(previewContainer.firstChild);
+  }
+
   if (existingSelector) previewContainer.appendChild(existingSelector);
 
   const layout = layoutInput.value || "grid";
-
   const imageUrls = [];
 
   const readAll = Array.from(files).map(
@@ -563,7 +576,10 @@ function showImagePreview(files) {
         html = renderGrid(imageUrls);
     }
 
+    // Inject new content
     previewContainer.innerHTML = html;
+
+    // Re-attach layout selector
     if (existingSelector) previewContainer.appendChild(existingSelector);
   });
 
@@ -623,4 +639,18 @@ document.addEventListener("click", (e) => {
   if (!layoutDropdown.contains(e.target)) {
     layoutOptions.style.display = "none";
   }
+});
+
+document.getElementById("cancelEditBtn").addEventListener("click", () => {
+  editingPostId = null;
+  postForm.reset();
+  layoutInput.value = "grid";
+  layoutSelected.textContent = "Grid";
+  layoutSelector.style.display = "none";
+  previewContainer.innerHTML = "";
+  imageLabel.textContent = "Choose/Drop Image";
+  imageInput.value = "";
+  postForm.classList.remove("editing");
+  document.getElementById("cancelEditBtn").style.display = "none";
+  document.getElementById("submitPostBtn").textContent = "Add Post";
 });

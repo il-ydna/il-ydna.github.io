@@ -109,7 +109,9 @@ def handle_get(event):
         resp = table.scan()
         items = resp.get("Items", [])
         items = decimal_to_native(items)
-        return cors_response(200, items)
+        response = cors_response(200, items)
+        print("GET response headers:", response["headers"])  # ✅ add this
+        return response
     except Exception as e:
         tb = traceback.format_exc()
         print(f"GET error: {tb}")
