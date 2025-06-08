@@ -4,6 +4,7 @@ const poolData = {
 };
 const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 const OWNER_ID = "b19b5500-0021-70d5-4f79-c9966e8d1abd";
+let editingPostId = null;
 
 // Get fresh ID token from Cognito session
 function getIdToken() {
@@ -56,14 +57,14 @@ window.addEventListener("DOMContentLoaded", () => {
   loadPosts();
 });
 
+// submit/edit handler
 postForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+  removeValidationMessage();
 
   const titleInput = postForm.querySelector('input[name="title"]');
   const contentInput = postForm.querySelector('textarea[name="content"]');
   const tagInput = postForm.querySelector('input[name="tag"]');
-
-  removeValidationMessage();
 
   if (!titleInput.value.trim()) {
     showValidationMessage("Give a title.");
@@ -85,30 +86,36 @@ postForm.addEventListener("submit", async (e) => {
     tag: formData.get("tag") || "general",
     timestamp: Date.now(),
     username: await getUsernameFromToken(),
+    pageOwnerId: OWNER_ID,
   };
+
   const currentUserId = await getUserIdFromToken();
   if (currentUserId !== OWNER_ID) {
     newPost.tag = "guest";
   }
 
-  try {
-    const idToken = await getIdToken();
-    if (!idToken) {
-      showValidationMessage("Please log in to submit posts.");
-      return;
-    }
+  const idToken = await getIdToken();
+  if (!idToken) {
+    showValidationMessage("Please log in to submit posts.");
+    return;
+  }
 
-    const response = await fetch(
-      "https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(newPost),
-      }
-    );
+  const method = editingPostId ? "PUT" : "POST";
+  const endpoint = "https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/";
+
+  if (editingPostId) {
+    newPost.id = editingPostId;
+  }
+
+  try {
+    const response = await fetch(endpoint, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify(newPost),
+    });
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -116,8 +123,20 @@ postForm.addEventListener("submit", async (e) => {
       return;
     }
 
+    const idToScroll = editingPostId; // store before reset
+    editingPostId = null;
     postForm.reset();
     loadPosts();
+
+    // Scroll back to edited post
+    setTimeout(() => {
+      const updatedEl = document.querySelector(`[data-id="${idToScroll}"]`);
+      if (updatedEl) {
+        updatedEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        updatedEl.classList.add("just-edited");
+        setTimeout(() => updatedEl.classList.remove("just-edited"), 1500);
+      }
+    }, 300);
   } catch (error) {
     showValidationMessage("Network error. Try again.");
   }
@@ -205,13 +224,22 @@ function renderPosts(posts, currentUserId = null) {
       const color = getTagColor(post.tag);
       const username = post.username || "Unknown User";
 
-      const isPostOwner = post.userId === currentUserId;
+      console.log("POST", post);
+      console.log("currentUserId", currentUserId);
+      console.log("post.userId", post.userId);
+      console.log("equal?", post.userId === currentUserId);
+
+      const isPostOwner = post.userId && post.userId === currentUserId;
       const isSiteOwner = currentUserId === OWNER_ID;
 
       const deleteBtn =
         isPostOwner || isSiteOwner
           ? `<button onclick="deletePost('${post.id}')">Delete</button>`
           : "";
+      const editBtn = isPostOwner
+        ? `<button onclick="editPost('${post.id}')">Edit</button>`
+        : "";
+
       const signature = isPostOwner
         ? ""
         : `<small>Posted by <strong>${username}</strong></small>`;
@@ -228,6 +256,7 @@ function renderPosts(posts, currentUserId = null) {
             <small>${new Date(post.timestamp).toLocaleString()}</small>
             ${signature}
             ${deleteBtn}
+            ${editBtn}
           </div>
         </article>
       `;
@@ -239,6 +268,33 @@ function renderPosts(posts, currentUserId = null) {
       setTimeout(() => el.classList.add("show"), i * 80);
     });
   });
+}
+
+async function editPost(id) {
+  const postEl = document.querySelector(`[data-id="${id}"]`);
+  if (!postEl) return;
+
+  postForm.scrollIntoView({ behavior: "smooth" });
+
+  const response = await fetch(
+    "https://6bm2adpxck.execute-api.us-east-2.amazonaws.com/"
+  );
+  const posts = await response.json();
+  const post = posts.find((p) => p.id === id);
+  if (!post) return;
+
+  postForm.querySelector('input[name="title"]').value = post.title;
+  postForm.querySelector('textarea[name="content"]').value = post.content;
+  postForm.querySelector('input[name="tag"]').value = post.tag;
+
+  const imageLabel = document.querySelector("label[for='imageInput']");
+  if (post.image) {
+    imageLabel.innerHTML = `<span style="text-decoration: underline;">[Current Image]</span>`;
+  } else {
+    imageLabel.textContent = "Choose Image";
+  }
+
+  editingPostId = id;
 }
 
 async function deletePost(id) {

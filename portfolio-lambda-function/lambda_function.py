@@ -89,6 +89,9 @@ def lambda_handler(event, context):
 
     if method == "DELETE":
         return handle_delete(event)
+    
+    if method == "PUT":
+        return handle_put(event)
 
     return cors_response(405, {"error": "Method Not Allowed"})
 
@@ -145,35 +148,27 @@ def handle_post(event):
 
 def handle_delete(event):
     try:
-        claims   = get_user_claims(event)
+        claims = get_user_claims(event)
         user_sub = claims.get("sub")
 
-        post_id = (event.get("queryStringParameters") or {}).get("id")
-        if not post_id:
-            return cors_response(400, {"error": "Missing 'id' query parameter"})
-
-        resp  = table.get_item(Key={"id": post_id})
-        item  = resp.get("Item")
-        if not item:
-            return cors_response(404, {"error": f"Post {post_id} not found"})
-
-        # 🚫 If the caller isn’t the owner, block the delete
-        if item.get("userId") != user_sub:
-            return cors_response(403, {"error": "Not your post"})
-        print('trying to delete here yay')
         qs_params = event.get("queryStringParameters") or {}
         post_id = qs_params.get("id")
         if not post_id:
             return cors_response(400, {"error": "Missing 'id' query parameter"})
 
-        # 1. Get the post item first to retrieve the image key
+        # Get the post to validate and retrieve image key
         resp = table.get_item(Key={"id": post_id})
         item = resp.get("Item")
-
         if not item:
-            return cors_response(404, {"error": f"Post with id {post_id} does not exist"})
+            return cors_response(404, {"error": f"Post {post_id} not found"})
 
-        # 2. Delete image from S3 if it exists
+        post_owner = item.get("userId")
+        page_owner = item.get("pageOwnerId")
+
+        if user_sub != post_owner and user_sub != page_owner:
+            return cors_response(403, {"error": "Not authorized to delete this post"})
+
+        # Delete image from S3 if present
         image_url = item.get("image", "")
         print(f"Image URL from DynamoDB: {image_url}")
         if image_url:
@@ -187,7 +182,7 @@ def handle_delete(event):
             except Exception as e:
                 print(f"Error deleting image from S3: {e}")
 
-        # 3. Delete post from DynamoDB
+        # Delete post from DynamoDB
         response = table.delete_item(
             Key={"id": post_id},
             ConditionExpression="attribute_exists(id)"
@@ -207,12 +202,66 @@ def handle_delete(event):
         tb = traceback.format_exc()
         return cors_response(500, {"error": str(e), "traceback": tb})
 
+def handle_put(event):
+    try:
+        claims = get_user_claims(event)
+        user_sub = claims.get("sub")
+
+        body = json.loads(event.get("body", "{}"))
+        post_id = body.get("id")
+
+        if not post_id:
+            return cors_response(400, {"error": "Missing post ID"})
+
+        # Fetch the existing post to verify ownership
+        resp = table.get_item(Key={"id": post_id})
+        item = resp.get("Item")
+
+        if not item:
+            return cors_response(404, {"error": f"Post {post_id} not found"})
+        print(f"user_sub: {user_sub}")
+        print(f"item.userId: {item.get('userId')}")
+        print(f"equal: {item.get('userId') == user_sub}")
+        if item.get("userId") != user_sub:
+            return cors_response(403, {"error": "Not your post"})
+
+        # Handle optional image replacement
+        image_base64 = body.get("image")
+        if image_base64 and image_base64 != item.get("image"):
+            # Delete old image
+            if item.get("image"):
+                parsed_url = urlparse(item["image"])
+                key = parsed_url.path.lstrip('/')
+                try:
+                    s3.delete_object(Bucket=bucket_name, Key=key)
+                except Exception as e:
+                    print(f"Error deleting old image: {e}")
+            # Upload new one
+            body["image"] = upload_image_to_s3(image_base64, post_id)
+        else:
+            body["image"] = item.get("image", "")
+
+        # Only allow certain fields to be updated
+        allowed_fields = ["title", "content", "tag", "image", "timestamp"]
+        updated_data = {k: v for k, v in body.items() if k in allowed_fields}
+        updated_data["id"] = post_id
+        updated_data["userId"] = user_sub
+        updated_data["userEmail"] = claims.get("email")
+
+        table.put_item(Item=updated_data)
+
+        return cors_response(200, {"message": "Post updated successfully"})
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        return cors_response(500, {"error": str(e), "traceback": tb})
+
 def cors_response(status_code, body_dict):
     return {
         "statusCode": status_code,
         "headers": {
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE, PUT",
             "Access-Control-Allow-Headers": "Content-Type,Authorization"
         },
         "body": json.dumps(body_dict)

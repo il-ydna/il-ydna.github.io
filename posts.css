@@ -294,6 +294,7 @@ button:hover {
   flex-shrink: 0;
 }
 
+/* ---- Mobile tweaks: make posts use full width ---- */
 @media (max-width: 768px) {
   /* Let the whole page flow edge-to-edge */
   body {

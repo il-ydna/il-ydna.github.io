@@ -33,7 +33,16 @@
       <input type="file" id="imageInput" name="image" accept="image/*" hidden />
 
       <div class="button-row">
-        <label for="imageInput" class="img-uploader">Choose Image</label>
+        <div id="image-drop-zone" class="img-uploader" tabindex="0">
+          <label for="imageInput">Choose/Drop Image</label>
+          <input
+            type="file"
+            id="imageInput"
+            name="image"
+            accept="image/*"
+            hidden
+          />
+        </div>
         <div id="tag-dropdown-wrapper">
           <div class="custom-dropdown" id="tagDropdown">
             <div class="selected-option button-style">Select a tag</div>
@@ -77,6 +86,7 @@
             <input type="hidden" name="tag" id="tagInput" required />
           </div>
         </div>
+
         <button type="submit">Add Post</button>
       </div>
     </form>
